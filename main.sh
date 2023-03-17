@@ -7,20 +7,6 @@ source .env
 # TODO If the user does not provide an initial prompt, prompt the user.
 prompt="$*"
 
-# TODO escape user string input
-# TODO accumulate chat messages while the token count is less than a configured limit.
-function get_payload() {
-	local user_message="$*"
-
-	cat <<EOF
-	{
-		"model": "gpt-3.5-turbo",
-		"messages": [{"role": "user", "content": "${user_message}"}],
-		"top_p": 0.01
-	}
-EOF
-}
-
 # Use this function when receiving input from a pipe.
 function read_stdin() {
 	# -r treats backslash as part of the line to preserve newlines.
@@ -29,6 +15,26 @@ function read_stdin() {
 	done
 	echo ${input}
 }
+
+# Escape text input to support prompts that include JSON text.
+function process_user_input() {
+	read_stdin \
+		| jq --raw-input
+}
+
+# TODO accumulate chat messages while the token count is less than a configured limit.
+function get_payload() {
+	local user_message="$(read_stdin)"
+
+	cat <<EOF
+	{
+		"model": "gpt-3.5-turbo",
+		"messages": [{"role": "user", "content": ${user_message} }],
+		"top_p": 0.01
+	}
+EOF
+}
+
 
 function get_openai_chat_completion() {
 	curl \
@@ -47,6 +53,8 @@ function parse_response() {
 			'.choices[0].message.content'
 }
 
-get_payload $prompt \
+echo $prompt \
+	| process_user_input \
+	| get_payload \
 	| get_openai_chat_completion \
 	| parse_response
