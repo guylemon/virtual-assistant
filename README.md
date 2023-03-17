@@ -8,7 +8,12 @@ Interact with the OpenAI chat model from the command line.
 
 ### Configuration
 
-Configure a `.env` file as follows: TODO
+Use a `.env` file to configure the program as follows:
+
+```bash
+# The openai api key
+API_KEY=<api key>
+```
 
 ### Invocation
 
