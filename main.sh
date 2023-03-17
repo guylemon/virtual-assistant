@@ -1,11 +1,6 @@
 #!/bin/bash
-
 set -e
 source .env
-
-# User may invoke the script with an initial user prompt.
-# TODO If the user does not provide an initial prompt, prompt the user.
-prompt="$*"
 
 # Use this function when receiving input from a pipe.
 function read_stdin() {
@@ -13,8 +8,11 @@ function read_stdin() {
 	while read -r line; do
 		input="${input}${line}"
 	done
-	echo ${input}
+
+	# don't add a trailing new line to the output
+	echo -n ${input}
 }
+
 
 # Escape text input to support prompts that include JSON text.
 function process_user_input() {
@@ -45,7 +43,6 @@ function get_openai_chat_completion() {
 			-d "$(read_stdin)"
 }
 
-
 function parse_response() {
 	read_stdin \
 		| jq \
@@ -53,7 +50,15 @@ function parse_response() {
 			'.choices[0].message.content'
 }
 
-echo $prompt \
+# The user may invoke the script with an initial user prompt.
+user_input="$*"
+
+# If the user does not provide an initial prompt, ask the user.
+if [ -z "$user_input" ]; then
+	read -p "Please enter a single line prompt: " user_input
+fi
+
+echo $user_input \
 	| process_user_input \
 	| get_payload \
 	| get_openai_chat_completion \

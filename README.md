@@ -6,6 +6,10 @@ Interact with the OpenAI chat model from the command line.
 
 ## Usage
 
+```bash
+bash main.sh [prompt]
+```
+
 ### Configuration
 
 Use a `.env` file to configure the program as follows:
@@ -18,8 +22,10 @@ API_KEY=<api key>
 ### Invocation
 
 ```bash
-bash main.sh <your prompt here>
+bash main.sh [prompt]
 ```
+
+If the program does not receive user input, it will prompt the user for a single line of input.
 
 ### Chat completion
 
