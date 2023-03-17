@@ -27,6 +27,14 @@ bash main.sh [prompt]
 
 If the program does not receive user input, it will prompt the user for a single line of input.
 
+### Commands
+
+The chat interface supports the following user commands:
+
+- `/q` quits the chat.
+
+## Notes
+
 ### Chat completion
 
 Sample request:

@@ -20,7 +20,6 @@ function process_user_input() {
 		| jq --raw-input
 }
 
-# TODO accumulate chat messages while the token count is less than a configured limit.
 function get_payload() {
 	local user_message="$(read_stdin)"
 
@@ -50,16 +49,47 @@ function parse_response() {
 			'.choices[0].message.content'
 }
 
+function print_welcome_message() {
+cat << EOF
+Enter '/q' to quit.
+EOF
+}
+
 # The user may invoke the script with an initial user prompt.
 user_input="$*"
 
+print_welcome_message
+
 # If the user does not provide an initial prompt, ask the user.
 if [ -z "$user_input" ]; then
-	read -p "Please enter a single line prompt: " user_input
+  echo "Type a message to get started."
 fi
 
-echo $user_input \
-	| process_user_input \
-	| get_payload \
-	| get_openai_chat_completion \
-	| parse_response
+# Begin chat loop
+# TODO accumulate chat messages to retain context
+# TODO accumulate chat messages while the token count is less than a configured limit.
+# TODO label user input
+# TODO label ai responses
+while true; do
+  # Prompt for input
+	if [ -z "$user_input" ]; then
+		read -p "> " user_input
+		continue
+	fi
+
+  # Detect user commands
+	if [ "$user_input" = "/q" ]; then
+		echo "Exiting chat."
+		exit 0
+	fi
+
+  # Get chat response
+	echo $user_input \
+		| process_user_input \
+		| get_payload \
+		| get_openai_chat_completion \
+		| parse_response
+
+	# Clear user input for next round.
+	unset user_input
+done
