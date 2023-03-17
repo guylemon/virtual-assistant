@@ -7,9 +7,10 @@ source .env
 # TODO If the user does not provide an initial prompt, prompt the user.
 prompt="$*"
 
+# TODO escape user string input
 # TODO accumulate chat messages while the token count is less than a configured limit.
 function get_payload() {
-	local user_message="$1"
+	local user_message="$*"
 
 	cat <<EOF
 	{
