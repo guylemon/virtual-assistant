@@ -4,6 +4,18 @@
 
 Interact with the OpenAI chat model from the command line.
 
+## Usage
+
+### Configuration
+
+Configure a `.env` file as follows: TODO
+
+### Invocation
+
+```bash
+bash main.sh <your prompt here>
+```
+
 ### Chat completion
 
 Sample request:
