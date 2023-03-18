@@ -109,6 +109,13 @@ function label_ai_response() {
   echo "${dashes} AI ${dashes}"
 }
 
+function label_user_input() {
+  local dashes="$(print_grey "----")"
+
+  echo
+  echo "${dashes} ME ${dashes}"
+}
+
 function print_response() {
   read_stdin \
     | jq \
@@ -139,7 +146,6 @@ user_input="$*"
 print_welcome_message "$user_input"
 
 # TODO accumulate chat messages while the token count is less than a configured limit.
-# TODO label user input
 
 # Begin chat loop
 messages="[]"
@@ -189,6 +195,9 @@ while true; do
   label_ai_response
   echo -e "$ai_response" \
     | print_response
+
+  # Label the next user message
+  label_user_input
 
   # Clean up
   unset user_input
