@@ -48,13 +48,40 @@ function process_user_input() {
     | jq --raw-input
 }
 
-function get_payload() {
+# Create a json user message to add to the payload
+function create_user_message() {
   local user_message="$(read_stdin)"
+
+cat <<EOF
+{"role": "user", "content": ${user_message} }
+EOF
+
+}
+
+# Append a json message to the messages array.
+function append_message() {
+  local json_message_array="$1"
+  local json_message_to_append="$(read_stdin)"
+
+  # Append the json message to the json messages array
+  jq \
+      --null-input \
+      --argjson m "$json_message_to_append" \
+      --argjson ms "$json_message_array" \
+      '
+      { messages: $ms }
+        | .messages += [$m]
+        | .messages
+      '
+}
+
+function create_chat_payload() {
+  local msg_array="$(read_stdin)"
 
   cat <<EOF
   {
     "model": "gpt-3.5-turbo",
-    "messages": [{"role": "user", "content": ${user_message} }],
+    "messages": ${msg_array},
     "top_p": 0.01
   }
 EOF
@@ -70,7 +97,12 @@ function get_openai_chat_completion() {
       -d "$(read_stdin)"
 }
 
-function parse_response() {
+function extract_chat_response() {
+  read_stdin \
+    | jq '.choices[0].message'
+}
+
+function print_response() {
   read_stdin \
     | jq \
       --raw-output \
@@ -78,20 +110,20 @@ function parse_response() {
 }
 
 function print_welcome_message() {
-print_grey "$(print_divider)"
+  print_grey "$(print_divider)"
 
-cat << EOF
+  cat << EOF
 Welcome!
 Enter '/q' to quit.
 
 EOF
 
-# If the user does not provide an initial prompt, ask the user.
-if [ -z "$user_input" ]; then
-  echo "Type a message to get started."
-fi
+  # If the user does not provide an initial prompt, ask the user.
+  if [ -z "$user_input" ]; then
+    echo "Type a message to get started."
+  fi
 
-print_grey "$(print_divider)"
+  print_grey "$(print_divider)"
 }
 
 # The user may invoke the script with an initial user prompt.
@@ -99,11 +131,15 @@ user_input="$*"
 
 print_welcome_message "$user_input"
 
-# Begin chat loop
-# TODO accumulate chat messages to retain context
 # TODO accumulate chat messages while the token count is less than a configured limit.
 # TODO label user input
 # TODO label ai responses
+
+# use jq to accumulate messages in a JSON array.
+
+# Begin chat loop
+messages="[]"
+
 while true; do
   # Prompt for input
   if [ -z "$user_input" ]; then
@@ -117,13 +153,40 @@ while true; do
     exit 0
   fi
 
-  # Get chat response
-  echo $user_input \
-    | process_user_input \
-    | get_payload \
-    | get_openai_chat_completion \
-    | parse_response
+  # Generate user message as JSON
+  user_msg="$(
+    echo $user_input \
+      | process_user_input \
+      | create_user_message
+  )"
 
-  # Clear user input for next round.
+  # Add user message to messages JSON array
+  messages="$(
+    echo "$user_msg" \
+      | append_message "$messages"
+  )"
+
+  # Send messages to openai
+  ai_response="$(
+    echo "${messages}" \
+      | create_chat_payload \
+      | get_openai_chat_completion \
+  )"
+
+  # Add ai response to messages JSON array
+  messages="$(
+    echo "$ai_response" \
+      | extract_chat_response \
+      | append_message "$messages"
+  )"
+
+  # Print the response without the double new line prefix.
+  # The open AI reponse comes back prefixed with \n\n
+  echo -e "$ai_response" \
+    | print_response
+
+  # Clean up
   unset user_input
+  unset user_msg
+  unset ai_response
 done
