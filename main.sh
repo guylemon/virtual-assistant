@@ -13,6 +13,34 @@ function read_stdin() {
   echo -n ${input}
 }
 
+# `\033[33m` sets the text color to yellow.
+# `\033[0m` resets the text color to the default.
+function print_yellow() {
+  echo -e "\033[33m${*}\033[0m"
+}
+
+# `\033[90m` sets the text color to grey.
+# `\033[0m` resets the text color to the default.
+function print_grey() {
+  echo -e "\033[90m${*}\033[0m"
+}
+
+# `\033[32m` sets the color to green
+# `\033[0m` resets the color to default
+function print_green() {
+  echo -e "\033[32m${*}\033[0m"
+}
+
+# Print a divider that is 50% the width of the terminal.
+function print_divider() {
+  # Get the width of the terminal
+  local term_width=$(tput cols)
+  local divider_width=$((term_width / 2))
+
+  # Print the `-` character for half the terminal width.
+  local divider="$(printf "%0.s-" $(seq 1 $divider_width))"
+  echo -n "$divider"
+}
 
 # Escape text input to support prompts that include JSON text.
 function process_user_input() {
@@ -50,20 +78,26 @@ function parse_response() {
 }
 
 function print_welcome_message() {
+print_grey "$(print_divider)"
+
 cat << EOF
+Welcome!
 Enter '/q' to quit.
+
 EOF
-}
-
-# The user may invoke the script with an initial user prompt.
-user_input="$*"
-
-print_welcome_message
 
 # If the user does not provide an initial prompt, ask the user.
 if [ -z "$user_input" ]; then
   echo "Type a message to get started."
 fi
+
+print_grey "$(print_divider)"
+}
+
+# The user may invoke the script with an initial user prompt.
+user_input="$*"
+
+print_welcome_message "$user_input"
 
 # Begin chat loop
 # TODO accumulate chat messages to retain context
