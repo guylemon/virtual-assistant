@@ -2,13 +2,18 @@
 
 ## Overview
 
-Interact with the OpenAI chat model from the command line.
+This script enables the user to chat with OpenAI's chat completion model from the command line.
 
 ## Usage
 
 ```bash
 bash main.sh [prompt]
 ```
+### Prerequisites
+
+- Internet connection
+- OpenAI API key
+- Bash shell
 
 ### Configuration
 
