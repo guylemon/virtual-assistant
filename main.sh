@@ -102,6 +102,13 @@ function extract_chat_response() {
     | jq '.choices[0].message'
 }
 
+function label_ai_response() {
+  local dashes="$(print_grey "----")"
+
+  echo
+  echo "${dashes} AI ${dashes}"
+}
+
 function print_response() {
   read_stdin \
     | jq \
@@ -133,9 +140,6 @@ print_welcome_message "$user_input"
 
 # TODO accumulate chat messages while the token count is less than a configured limit.
 # TODO label user input
-# TODO label ai responses
-
-# use jq to accumulate messages in a JSON array.
 
 # Begin chat loop
 messages="[]"
@@ -180,8 +184,9 @@ while true; do
       | append_message "$messages"
   )"
 
-  # Print the response without the double new line prefix.
   # The open AI reponse comes back prefixed with \n\n
+  # Print the response without the double new line prefix.
+  label_ai_response
   echo -e "$ai_response" \
     | print_response
 
