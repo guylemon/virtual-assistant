@@ -40,6 +40,10 @@ The chat interface supports the following user commands:
 
 ## Notes
 
+### Chat context
+
+The program constrains the conversation context up to the model's token limit less approximately 256 tokens. As the context window grows beyond the limit, the program removes the oldest messages to maintain the constraint.
+
 ### Chat completion
 
 Sample request:

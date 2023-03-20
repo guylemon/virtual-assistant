@@ -2,6 +2,12 @@
 set -e
 source .env
 
+# A 'token' is roughly four characters.
+# The GPT 3.5 models allow for 4096 tokens in context.
+# Allow 1024 characters for the GPT response.
+# (15360 characters)
+CHARACTER_LIMIT=$((4096 * 4 - 1024))
+
 # Use this function when receiving input from a pipe.
 function read_stdin() {
   # -r treats backslash as part of the line to preserve newlines.
@@ -58,21 +64,40 @@ EOF
 
 }
 
+# Use jq to count the characters in the conversation context.
+function get_total_character_count() {
+  local msg_json_array="$1"
+  echo "${msg_json_array}" | jq 'map(.content) | map(length) | add'
+}
+
 # Append a json message to the messages array.
+# TODO (low priority) Manage the window more efficiently. The function should not
+# need to count the total characters within the while loop.
 function append_message() {
   local json_message_array="$1"
   local json_message_to_append="$(read_stdin)"
+  local limit="$2"
 
   # Append the json message to the json messages array
-  jq \
-      --null-input \
-      --argjson m "$json_message_to_append" \
-      --argjson ms "$json_message_array" \
-      '
-      { messages: $ms }
-        | .messages += [$m]
-        | .messages
-      '
+  json_message_array="$(jq \
+    --null-input \
+    --argjson m "$json_message_to_append" \
+    --argjson ms "$json_message_array" \
+    '
+    { messages: $ms }
+      | .messages += [$m]
+      | .messages
+    '
+  )"
+
+  total_chars=$(get_total_character_count "${json_message_array}")
+
+  while (( total_chars > limit )); do
+    json_message_array="$(echo ${json_message_array} | jq '.[1:]')"
+    total_chars=$(get_total_character_count "${json_message_array}")
+  done
+
+  echo "${json_message_array}"
 }
 
 function create_chat_payload() {
@@ -145,8 +170,6 @@ user_input="$*"
 
 print_welcome_message "$user_input"
 
-# TODO accumulate chat messages while the token count is less than a configured limit.
-
 # Begin chat loop
 messages="[]"
 
@@ -173,7 +196,7 @@ while true; do
   # Add user message to messages JSON array
   messages="$(
     echo "$user_msg" \
-      | append_message "$messages"
+      | append_message "$messages" "$CHARACTER_LIMIT"
   )"
 
   # Send messages to openai
@@ -187,7 +210,7 @@ while true; do
   messages="$(
     echo "$ai_response" \
       | extract_chat_response \
-      | append_message "$messages"
+      | append_message "$messages" "$CHARACTER_LIMIT"
   )"
 
   # The open AI reponse comes back prefixed with \n\n
