@@ -141,11 +141,14 @@ function label_user_input() {
   echo "${dashes} ME ${dashes}"
 }
 
+# `:a;N;$!ba;` reads the entire input into the pattern space.
+# sed won't remove the newlines without this pattern.
 function print_response() {
   read_stdin \
     | jq \
       --raw-output \
-      '.choices[0].message.content'
+      '.choices[0].message.content' \
+    | sed ':a;N;$!ba;s/\n\n//;'
 }
 
 function print_welcome_message() {
@@ -216,7 +219,7 @@ while true; do
   # The open AI reponse comes back prefixed with \n\n
   # Print the response without the double new line prefix.
   label_ai_response
-  echo -e "$ai_response" \
+  echo "$ai_response" \
     | print_response
 
   # Label the next user message
